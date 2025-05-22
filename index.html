@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valorant チーム分け & マップ選択</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Valorant チーム分け & マップ選択</h1>
+
+        <div class="controls">
+            <button id="openSettingsButton">⚙️ 設定</button>
+        </div>
+
+        <div class="player-input-area">
+            <h2>プレイヤー入力</h2>
+            <div id="playerEntries">
+                </div>
+            <button id="addPlayerButton">＋ プレイヤーを追加</button>
+        </div>
+
+        <button id="generateTeamsButton">🚀 チーム分け実行</button>
+
+        <div class="teams-container">
+            <div class="team" id="attackerTeam">
+                <h2>アタッカー</h2>
+                <p>合計ランク: <span id="attackerRankSum">0</span></p>
+                <ul id="attackerPlayers"></ul>
+            </div>
+            <div class="team" id="defenderTeam">
+                <h2>ディフェンダー</h2>
+                <p>合計ランク: <span id="defenderRankSum">0</span></p>
+                <ul id="defenderPlayers"></ul>
+            </div>
+        </div>
+
+        <div class="map-area">
+            <h2>マップ</h2>
+            <div id="mapInfo">
+                <p id="mapName">マップはまだ選択されていません</p>
+                <img id="mapImage" src="" alt="マップ画像" style="display:none;">
+            </div>
+        </div>
+
+        <button id="copyResultButton">📋 結果をコピー</button>
+        <textarea id="resultText" style="opacity: 0; position: absolute; left: -9999px;"></textarea>
+
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeSettingsButton">&times;</span>
+            <h2>設定</h2>
+
+            <div class="setting-section">
+                <h3>ランク設定</h3>
+                <div id="rankSettingsContainer">
+                    </div>
+                <button id="addRankButton">＋ ランク種類を追加</button>
+                <button id="saveRankSettingsButton">ランク設定を保存</button>
+            </div>
+
+            <div class="setting-section">
+                <h3>マップ選択</h3>
+                <div id="mapSelectionContainer">
+                    </div>
+                <button id="saveMapSettingsButton">マップ設定を保存</button>
+            </div>
+
+            <div class="setting-section">
+                <h3>チームリセット</h3>
+                <button id="resetTeamsButton">チームをリセット</button>
+            </div>
+             <div class="setting-section">
+                <h3>全データリセット</h3>
+                <p>プレイヤー情報、ランク設定、マップ設定など、全ての入力情報を初期状態に戻します。</p>
+                <button id="resetAllDataButton" class="danger-button">⚠️ 全データをリセット</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
