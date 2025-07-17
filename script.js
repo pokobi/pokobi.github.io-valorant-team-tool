@@ -45,7 +45,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { name: 'パール', file: 'Loading_Screen_Pearl.webp', selected: true },
         { name: 'ロータス', file: 'Loading_Screen_Lotus.webp', selected: true },
         { name: 'サンセット', file: 'Loading_Screen_Sunset.webp', selected: true },
-        { name: 'アビス', file: 'Loading_Screen_Abyss.webp', selected: true }
+        { name: 'アビス', file: 'Loading_Screen_Abyss.webp', selected: true },
+        { name: 'カロード', file: 'Loading_Screen_Corrode.webp', selected: true }
     ];
     let selectedMap = null;
 
