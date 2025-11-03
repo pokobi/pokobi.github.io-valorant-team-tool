@@ -45,6 +45,14 @@ h1, h2 {
     background-color: #fff;
 }
 
+/* 【追加】チェックボックスのスタイル */
+.player-select-checkbox {
+    margin-right: 10px;
+    flex-shrink: 0; /* 縮まないようにする */
+    transform: scale(1.2); /* 少し大きくして押しやすく */
+    cursor: pointer;
+}
+
 .player-entry input[type="text"],
 .player-entry select {
     flex-grow: 1;
@@ -142,14 +150,14 @@ button {
     height: auto;
     border-radius: 5px;
     margin-top: 10px;
-    display: block; /* display:noneを上書きするため */
+    display: block; 
     margin-left: auto;
     margin-right: auto;
 }
 
 /* モーダル */
 .modal {
-    display: none; /* 初期状態では非表示 */
+    display: none; 
     position: fixed;
     z-index: 1000;
     left: 0;
@@ -157,7 +165,7 @@ button {
     width: 100%;
     height: 100%;
     overflow: auto;
-    background-color: rgba(0,0,0,0.6); /* 背景を少し暗くする */
+    background-color: rgba(0,0,0,0.6); 
 }
 
 .modal-content {
@@ -220,15 +228,27 @@ button {
         width: 100%;
         margin-bottom: 15px;
     }
+
+    /* 【変更】スマホ表示のレイアウト調整 */
     .player-entry {
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction: column; /* 縦積みに変更 */
+        align-items: stretch; /* 横幅いっぱいに伸ばす */
     }
+
+    /* 【変更】チェックボックスのスマホ用スタイル */
+    .player-select-checkbox {
+        margin-right: 0;
+        margin-bottom: 8px; /* 名前入力欄との間隔 */
+        align-self: flex-start; /* 横幅いっぱいに伸びるのを防ぎ、左に寄せる */
+        transform: scale(1.3); /* スマホではさらに押しやすく */
+    }
+
     .player-entry input[type="text"],
     .player-entry select {
         margin-right: 0;
         margin-bottom: 5px;
     }
+
     .modal-content {
         margin: 20% auto;
         width: 90%;
