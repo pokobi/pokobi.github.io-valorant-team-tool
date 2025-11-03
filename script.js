@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetAllDataButton = document.getElementById('resetAllDataButton');
 
 
-    let players = [];
+    let players = []; // 全ての登録プレイヤー（チェック状態含む）
     let rankTiers = [
         { name: 'A+', value: 5 },
         { name: 'A', value: 4 },
@@ -59,12 +59,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- イベントリスナー ---
     addPlayerButton.addEventListener('click', () => {
-        if (players.length < 10) {
-            addPlayerEntry();
-            savePlayers();
-        } else {
-            alert('プレイヤーは最大10人までです。');
-        }
+        // プレイヤー追加数の制限を撤廃
+        addPlayerEntry("", rankTiers[rankTiers.length > 0 ? rankTiers.length - 1 : 0].name, undefined, true); // 新規追加時はデフォルトでチェックON
+        savePlayers();
     });
 
     generateTeamsButton.addEventListener('click', generateTeamsAndMap);
@@ -97,17 +94,33 @@ document.addEventListener('DOMContentLoaded', () => {
     function addInitialPlayerEntries() {
         const existingPlayers = players.length;
         if (existingPlayers === 0) { // 既存のプレイヤーデータがない場合のみ初期入力欄を追加
+            const defaultRankName = rankTiers.length > 0 ? rankTiers[rankTiers.length - 1].name : ""; // 最低ランク
             for (let i = 0; i < 5; i++) { // 初期は5人分の入力欄を用意
-                addPlayerEntry("", rankTiers[rankTiers.length -1].name); // デフォルトは最低ランク
+                addPlayerEntry("", defaultRankName, undefined, true); // デフォルトでチェックON
             }
         }
     }
 
 
-    function addPlayerEntry(name = "", rankName = rankTiers[0].name, id = Date.now() + Math.random()) {
+    /**
+     * プレイヤー入力欄をDOMに追加する
+     * @param {string} name - プレイヤー名
+     * @param {string} rankName - ランク名
+     * @param {string} id - プレイヤーID
+     * @param {boolean} selected - 参加/不参加 (チェックボックスの状態)
+     */
+    function addPlayerEntry(name = "", rankName = rankTiers[0]?.name || "", id = Date.now() + Math.random(), selected = true) {
         const playerEntryDiv = document.createElement('div');
         playerEntryDiv.classList.add('player-entry');
         playerEntryDiv.dataset.id = id;
+
+        // 【変更】参加チェックボックス
+        const selectedCheckbox = document.createElement('input');
+        selectedCheckbox.type = 'checkbox';
+        selectedCheckbox.checked = selected;
+        selectedCheckbox.classList.add('player-select-checkbox');
+        selectedCheckbox.title = 'チーム分けに参加する';
+        selectedCheckbox.addEventListener('change', savePlayers); // 変更時に保存
 
         const nameInput = document.createElement('input');
         nameInput.type = 'text';
@@ -135,12 +148,17 @@ document.addEventListener('DOMContentLoaded', () => {
             savePlayers(); // 削除後も保存
         });
 
+        playerEntryDiv.appendChild(selectedCheckbox); // 【変更】チェックボックスを追加
         playerEntryDiv.appendChild(nameInput);
         playerEntryDiv.appendChild(rankSelect);
         playerEntryDiv.appendChild(deleteButton);
         playerEntriesContainer.appendChild(playerEntryDiv);
     }
 
+    /**
+     * 【変更】DOMから全プレイヤー情報を収集し、グローバルの players 配列を更新する
+     * チェックボックスの状態も 'selected' プロパティとして保存する
+     */
     function collectPlayersData() {
         players = [];
         const entries = playerEntriesContainer.querySelectorAll('.player-entry');
@@ -148,66 +166,76 @@ document.addEventListener('DOMContentLoaded', () => {
             const name = entry.querySelector('input[type="text"]').value.trim();
             const rankName = entry.querySelector('select').value;
             const rankValue = rankTiers.find(r => r.name === rankName)?.value || 0;
-            if (name) { // 名前が入力されているプレイヤーのみを対象
+            const selected = entry.querySelector('.player-select-checkbox').checked; // 【変更】チェックボックスの状態を取得
+            
+            // 名前が入力されているプレイヤーのみを保存対象とする
+            if (name) { 
                 players.push({
-                    id: entry.dataset.id, // 保存・読み込み時に使うためのID
+                    id: entry.dataset.id,
                     name: name,
                     rankName: rankName,
-                    rankValue: rankValue
+                    rankValue: rankValue,
+                    selected: selected // 【変更】selected 状態を保存
                 });
             }
         });
-        return players;
     }
 
+    /**
+     * 【変更】チーム分けとマップ選択を実行する
+     * チェックボックスで選択されたプレイヤーのみを対象とする
+     */
     function generateTeamsAndMap() {
-        collectPlayersData();
-        if (players.length === 0) {
-            alert('プレイヤーを1人以上入力してください。');
+        collectPlayersData(); // 全プレイヤーの最新情報を収集
+
+        // 【変更】チーム分け対象のプレイヤー（選択済み かつ 名前がある）をフィルタリング
+        const participants = players.filter(p => p.selected && p.name);
+
+        // 【変更】参加者に対するバリデーション
+        if (participants.length === 0) {
+            alert('チーム分けに参加するプレイヤー（チェックボックスON）を1人以上選択してください。');
             return;
         }
-        if (players.length > 10) {
-            alert('プレイヤーは最大10人までです。現在 ' + players.length + ' 人入力されています。');
+        if (participants.length > 10) {
+            alert('チーム分けに参加するプレイヤーは最大10人までです。現在 ' + participants.length + ' 人選択されています。');
             return;
+        }
+        if (participants.length < 2) {
+             alert('チーム分けには最低2人の参加プレイヤーが必要です。');
+             return;
         }
 
-        // チーム分けロジック
-        let shuffledPlayers = [...players].sort(() => 0.5 - Math.random()); // プレイヤーをシャッフル
+        // チーム分けロジック (対象は 'participants' 配列)
         let teamAttacker = [];
         let teamDefender = [];
         let rankSumAttacker = 0;
         let rankSumDefender = 0;
 
-        // ランクの高い順にソート（均等分けのための一時的な処理）
-        shuffledPlayers.sort((a, b) => b.rankValue - a.rankValue);
-
-        // チーム分け (交互に、またはランク合計を考慮して)
-        // できるだけ均等になるように努力するが、複雑になりすぎないようにする
-        // 試行回数を設けて、最も均等な組み合わせを探す (より高度な均等化)
         let bestAttackerTeam = [];
         let bestDefenderTeam = [];
         let minDiff = Infinity;
 
-        // 1000回試行して最も均等な組み合わせを探す (ある程度のランダム性も担保)
+        // 1000回試行して最も均等な組み合わせを探す
         for (let i = 0; i < 1000; i++) {
-            let currentShuffledPlayers = [...players].sort(() => 0.5 - Math.random());
+            let currentShuffledPlayers = [...participants].sort(() => 0.5 - Math.random()); // 【変更】participants を使用
             let currentAttacker = [];
             let currentDefender = [];
             let currentRankSumAttacker = 0;
             let currentRankSumDefender = 0;
 
-            currentShuffledPlayers.forEach((player, index) => {
+            currentShuffledPlayers.forEach((player) => {
                 // 人数が少ないチーム、またはランク合計が低いチームに優先的に追加
+                // チーム上限5人の制約は維持
                 if (currentAttacker.length < Math.ceil(currentShuffledPlayers.length / 2) &&
                     (currentAttacker.length <= currentDefender.length || currentRankSumAttacker <= currentRankSumDefender)) {
-                    if (currentAttacker.length < 5) { // チーム上限5人
+                    if (currentAttacker.length < 5) { 
                         currentAttacker.push(player);
                         currentRankSumAttacker += player.rankValue;
                     } else if (currentDefender.length < 5) {
                         currentDefender.push(player);
                         currentRankSumDefender += player.rankValue;
                     }
-                } else if (currentDefender.length < 5) { // チーム上限5人
+                } else if (currentDefender.length < 5) { 
                     currentDefender.push(player);
                     currentRankSumDefender += player.rankValue;
                 } else if (currentAttacker.length < 5) {
@@ -216,12 +244,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // 9人以下で片方のチームが5人を超えないように調整
+            // 参加者が9人以下の場合の人数調整
             if (currentShuffledPlayers.length <= 9) {
                 while (currentAttacker.length > 5 || (currentAttacker.length > currentDefender.length + 1 && currentAttacker.length > Math.ceil(currentShuffledPlayers.length / 2))) {
                     if (currentDefender.length < 5) {
                         currentDefender.push(currentAttacker.pop());
-                    } else break; // どうしようもない場合
+                    } else break; 
                 }
                 while (currentDefender.length > 5 || (currentDefender.length > currentAttacker.length + 1 && currentDefender.length > Math.ceil(currentShuffledPlayers.length / 2))) {
                      if (currentAttacker.length < 5) {
@@ -238,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 bestAttackerTeam = currentAttacker;
                 bestDefenderTeam = currentDefender;
             } else if (diff === minDiff) {
-                // 差が同じ場合は、人数のバランスが良い方を優先 (より均等な人数割り)
+                // 差が同じ場合は、人数のバランスが良い方を優先
                 const currentBalance = Math.abs(currentAttacker.length - currentDefender.length);
                 const bestBalance = Math.abs(bestAttackerTeam.length - bestDefenderTeam.length);
                 if (currentBalance < bestBalance) {
@@ -279,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (availableMaps.length > 0) {
             selectedMap = availableMaps[Math.floor(Math.random() * availableMaps.length)];
             mapNameP.textContent = selectedMap.name;
-            mapImageImg.src = `img/${selectedMap.file}`; // imgフォルダを指定
+            mapImageImg.src = `img/${selectedMap.file}`; 
             mapImageImg.alt = selectedMap.name;
             mapImageImg.style.display = 'block';
         } else {
@@ -290,15 +318,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    /**
+     * 【変更】保存されたプレイヤー情報（チェック状態含む）を元に、入力欄を再描画する
+     */
     function renderPlayerInputs() {
         playerEntriesContainer.innerHTML = ''; // 既存の入力欄をクリア
         players.forEach(player => {
-            addPlayerEntry(player.name, player.rankName, player.id);
+            // 保存された selected 状態を渡す。未定義ならデフォルト(true)
+            addPlayerEntry(player.name, player.rankName, player.id, player.selected !== undefined ? player.selected : true);
         });
-        // プレイヤーデータがない場合、または少ない場合は初期入力欄を追加
-        if (players.length < 5 && players.length === 0) { // players.length === 0 の条件を追加し、完全に空の場合のみ初期入力欄を生成
-             addInitialPlayerEntries();
-        } else if (players.length === 0) { // 念のため、完全に空なら初期入力欄
+        // プレイヤーデータが全くない場合のみ、初期入力欄を追加
+        if (players.length === 0) { 
             addInitialPlayerEntries();
         }
     }
@@ -329,7 +359,6 @@ document.addEventListener('DOMContentLoaded', () => {
             deleteRankButton.addEventListener('click', () => {
                 rankTiers.splice(index, 1);
                 renderRankSettings(); // 再描画
-                // 関連するプレイヤーのランクも更新または通知が必要
             });
             itemDiv.appendChild(deleteRankButton);
 
@@ -378,14 +407,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!valid || newRankTiers.length === 0) {
             alert('すべてのランク名と有効な数値を入力してください。');
-            renderRankSettings(); // 問題があった場合は元に戻すか、正しい表示にする
+            renderRankSettings(); 
             return;
         }
 
         rankTiers = newRankTiers;
-        rankTiers.sort((a, b) => b.value - a.value); // 念のため強さ順でソート
-        renderRankSettings(); // 保存後に再描画して削除ボタンのイベントを再割り当て
-        updateAllPlayerRankSelects(); // プレイヤー入力欄のランク選択肢を更新
+        rankTiers.sort((a, b) => b.value - a.value); 
+        renderRankSettings(); 
+        updateAllPlayerRankSelects(); 
         localStorage.setItem('valorantRankTiers', JSON.stringify(rankTiers));
         alert('ランク設定を保存しました。');
     }
@@ -445,7 +474,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         localStorage.setItem('valorantMaps', JSON.stringify(allMaps));
         alert('マップ設定を保存しました。');
-        // 次回チーム分け時に反映される
     }
 
     function resetTeamDisplay() {
@@ -481,13 +509,12 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('コピーに失敗しました。手動でコピーしてください。');
             console.error('Copy failed:', err);
         }
-        // テキストエリアをフォーカスアウトして非表示に戻す
         resultTextTextarea.blur();
     }
 
     // --- ローカルストレージ関連 ---
     function savePlayers() {
-        collectPlayersData(); // 最新のプレイヤー情報を取得
+        collectPlayersData(); // 最新のプレイヤー情報（チェック状態含む）を取得
         localStorage.setItem('valorantPlayers', JSON.stringify(players));
     }
 
@@ -505,14 +532,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (storedRankTiers) {
             rankTiers = JSON.parse(storedRankTiers);
         }
-        // デフォルト値はグローバルで定義済み
     }
 
     function loadMaps() {
         const storedMaps = localStorage.getItem('valorantMaps');
         if (storedMaps) {
             const loadedMaps = JSON.parse(storedMaps);
-            // allMaps の selected 状態を更新、新しいマップが追加された場合も考慮
             allMaps = allMaps.map(defaultMap => {
                 const loadedMap = loadedMaps.find(lm => lm.name === defaultMap.name);
                 return loadedMap ? { ...defaultMap, selected: loadedMap.selected } : defaultMap;
@@ -553,10 +578,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function loadData() {
         loadRankTiers();
         loadMaps();
-        loadPlayers(); // プレイヤー情報を最後に読み込み、依存するUIを更新できるようにする
-        renderPlayerInputs(); // プレイヤー入力欄を生成
-        updateAllPlayerRankSelects(); // ランク情報をセレクトボックスに反映
-        loadLastTeamAndMap(); // 前回終了時のチームとマップ情報を読み込む
+        loadPlayers(); 
+        // renderPlayerInputs() は loadPlayers の後に呼び出す
+        renderPlayerInputs(); 
+        updateAllPlayerRankSelects(); 
+        loadLastTeamAndMap(); 
     }
 
     function resetAllApplicationData() {
@@ -572,11 +598,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 { name: 'A+', value: 5 }, { name: 'A', value: 4 },
                 { name: 'B+', value: 3 }, { name: 'B', value: 2 }, { name: 'C', value: 1 }
             ];
-            allMaps.forEach(map => map.selected = true); // 全マップを選択状態に
+            allMaps.forEach(map => map.selected = true); 
 
             // 表示を更新
-            renderPlayerInputs(); // これにより addInitialPlayerEntries が呼ばれるはず
-            addInitialPlayerEntries(); // 明示的に呼ぶ
+            renderPlayerInputs(); // これで addInitialPlayerEntries が呼ばれる
             renderRankSettings();
             renderMapSelection();
             resetTeamDisplay();
