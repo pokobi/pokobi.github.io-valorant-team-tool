@@ -37,7 +37,7 @@ h1, h2 {
 
 .player-entry {
     display: flex;
-    align-items: center;
+    align-items: center; /* 縦方向中央揃え */
     margin-bottom: 10px;
     padding: 10px;
     border: 1px solid #e0e0e0;
@@ -45,25 +45,26 @@ h1, h2 {
     background-color: #fff;
 }
 
-/* 【追加】チェックボックスのスタイル */
-.player-select-checkbox {
-    margin-right: 10px;
-    flex-shrink: 0; /* 縮まないようにする */
-    transform: scale(1.2); /* 少し大きくして押しやすく */
+/* [追加] チェックボックスのスタイル */
+.player-entry input[type="checkbox"] {
+    margin-right: 10px; /* チェックボックスと名前入力欄の間に隙間 */
+    flex-shrink: 0; /* チェックボックスが縮まないようにする */
+    /* サイズ調整 */
+    width: 18px;
+    height: 18px;
     cursor: pointer;
 }
 
 .player-entry input[type="text"],
 .player-entry select {
-    flex-grow: 1;
+    flex-grow: 1; /* 名前欄とランク欄が伸びるように */
     margin-right: 10px;
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 4px;
 }
 
-.player-entry button,
-button {
+button { /* [変更] .player-entry button と button を分離 */
     padding: 8px 15px;
     border: none;
     border-radius: 4px;
@@ -71,6 +72,16 @@ button {
     font-size: 0.9em;
     transition: background-color 0.3s ease;
 }
+
+.player-entry button { /* [追加] player-entry 内のボタン（削除ボタン） */
+    flex-shrink: 0; /* 削除ボタンは縮まない */
+    background-color: #e74c3c;
+    color: white;
+}
+.player-entry button:hover {
+     background-color: #c0392b;
+}
+
 
 #addPlayerButton, #generateTeamsButton, #copyResultButton, #openSettingsButton,
 #saveRankSettingsButton, #saveMapSettingsButton, #resetTeamsButton, #addRankButton {
@@ -84,7 +95,10 @@ button {
     background-color: #2980b9;
 }
 
-.delete-player-button {
+.delete-player-button { 
+    /* [変更] .player-entry button にスタイルを移したため、こちらは削除または統合 */
+    /* (元のCSSでは .delete-player-button が使われていたので、.player-entry button を .delete-player-button に戻します) */
+    /* やはり .player-entry button のままで、元の .delete-player-button のスタイルを適用します */
     background-color: #e74c3c;
     color: white;
 }
@@ -92,6 +106,26 @@ button {
 .delete-player-button:hover {
     background-color: #c0392b;
 }
+/* 元のCSSに戻すため、.player-entry button のスタイル指定を .delete-player-button に戻します */
+/* (上記 .player-entry button のスタイル指定は削除) */
+
+/* [修正] 元のCSSの指定に合わせて .delete-player-button を使う */
+.delete-player-button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.3s ease;
+    background-color: #e74c3c;
+    color: white;
+    flex-shrink: 0; /* 縮まないように */
+}
+
+.delete-player-button:hover {
+    background-color: #c0392b;
+}
+
 
 .danger-button {
     background-color: #e74c3c;
@@ -116,12 +150,12 @@ button {
 }
 
 #attackerTeam {
-    background-color: rgba(255, 99, 132, 0.2); /* 赤っぽい色 */
+    background-color: rgba(255, 99, 132, 0.2); 
     border: 1px solid rgba(255, 99, 132, 1);
 }
 
 #defenderTeam {
-    background-color: rgba(75, 192, 192, 0.2); /* ミントっぽい青緑色 */
+    background-color: rgba(75, 192, 192, 0.2); 
     border: 1px solid rgba(75, 192, 192, 1);
 }
 
@@ -155,7 +189,7 @@ button {
     margin-right: auto;
 }
 
-/* モーダル */
+/* モーダル (変更なし) */
 .modal {
     display: none; 
     position: fixed;
@@ -228,25 +262,33 @@ button {
         width: 100%;
         margin-bottom: 15px;
     }
-
-    /* 【変更】スマホ表示のレイアウト調整 */
+    
+    /* [変更] スマホ表示のレイアウト調整 */
     .player-entry {
-        flex-direction: column; /* 縦積みに変更 */
-        align-items: stretch; /* 横幅いっぱいに伸ばす */
+        flex-direction: column;
+        align-items: flex-start; /* 左寄せにする */
     }
-
-    /* 【変更】チェックボックスのスマホ用スタイル */
-    .player-select-checkbox {
-        margin-right: 0;
-        margin-bottom: 8px; /* 名前入力欄との間隔 */
-        align-self: flex-start; /* 横幅いっぱいに伸びるのを防ぎ、左に寄せる */
-        transform: scale(1.3); /* スマホではさらに押しやすく */
+    
+    .player-entry input[type="checkbox"] {
+        margin-right: 0; /* PC用のマージンをリセット */
+        margin-bottom: 8px; /* 下の要素との隙間 */
+        width: 20px; /* 少し大きめにする */
+        height: 20px;
     }
 
     .player-entry input[type="text"],
     .player-entry select {
         margin-right: 0;
         margin-bottom: 5px;
+        width: 100%; /* 幅を100%にする */
+        box-sizing: border-box; /* paddingを含めて100%にする */
+    }
+    
+    /* [変更] 削除ボタンも幅100%に */
+    .player-entry .delete-player-button {
+        width: 100%;
+        box-sizing: border-box;
+        margin-top: 5px; /* 上の要素との隙間 */
     }
 
     .modal-content {
